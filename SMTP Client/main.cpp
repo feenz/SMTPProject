@@ -54,7 +54,7 @@ int main( int argc, char* argv[] ) {
 				if ( status == ErrorCode::REQUEST_SUCCESS ) { // 250 from server
 					printf( "%d %s\r\n", status, recMessage );
 					
-					while ( true ) {					
+					while ( true ) {				
 						string msg = client.GetAndSendMessage( );
 						memset( &recMessage[0], '\0', sizeof( recMessage ) ); //clear buf
 						client.RecvData( recMessage, STRLEN );
@@ -150,12 +150,17 @@ int main( int argc, char* argv[] ) {
 }
 
 void parseServerMsg( int &status, char (&message)[STRLEN] ) {
+	string m;
 	string msg( message );			// covert to string
 	char temp[sizeof( message )];	// holds onto entire message
 	status = atoi( msg.substr( 0, 3 ).c_str( ) ); // get the error or status number
-	string m = msg.substr( 4, msg.find( '\0' ) ); // get the message portion
-	// copy msg to temp array, clear message buffer, copy back to original message array
-	strcpy( temp, m.c_str( ) );
+	if ( msg.length( ) > 3 ) {
+		m = msg.substr( 4, msg.find( '\0' ) ); // get the message portion
+		strcpy( temp, m.c_str( ) );
+	} else {
+		m = "";
+		strcpy( temp, m.c_str( ) );
+	}
 	memset( &message[0], '\0', sizeof( message ) );
 	strcpy( message, temp );
 }

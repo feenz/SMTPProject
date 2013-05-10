@@ -45,33 +45,13 @@ DWORD WINAPI receive_cmds( LPVOID lpParam ) {
 	
 	// 220
 	connectedClient.sendResponse( ErrorCode::SRVC_RUN_SUCCES, string( serverHostname + " SMTP Server ready" ) );
-	
-	// HELO response
+
 	result = connectedClient.recvData( recMessage );
-	if ( result == -1 ) {
-		failthesebitches = true;
-	}
+	printf( "Received: %s\r\n", recMessage.c_str( ) );
 	
-	if ( failthesebitches ) {
-		printf( "They have failed...\r\n" );
-	} else {
-		while ( true ) {
-			if ( result == -1 )
-				break;
-				
-			if ( recMessage.substr( 0, 4 ) == "HELO" ) {
-				client_hostname = recMessage.substr( 5 );
-				connectedClient.sendResponse( ErrorCode::REQUEST_SUCCESS, string( "Hello " + client_hostname + ", I am glad to meet you!" ) );
-				break;
-			} else {
-				connectedClient.sendResponse( ErrorCode::CMD_SYNTAX_EROR, ErrorCode::getCodeDescription( ErrorCode::CMD_SYNTAX_EROR ) );
-				printf( "Error: %d %s\r\n", ErrorCode::CMD_SYNTAX_EROR, ErrorCode::getCodeDescription( ErrorCode::CMD_SYNTAX_EROR ) );
-				result = connectedClient.recvData( recMessage );
-			}
-		}
-		connectedClient.recvData( recMessage );
-		printf( "Received: %s\r\n", recMessage.c_str( ) );
+	bool good = result != -1 ? true : false;  
 		
+	if ( good ) {
 		while ( recMessage != "QUIT" ) {		
 			if ( recMessage.substr( 0, 4 ) == "HELO" ) {
 				connectedClient.sendResponse( ErrorCode::REQUEST_SUCCESS, string( "Hello " + client_hostname + ", I am glad to meet you!" ) );
@@ -139,18 +119,17 @@ DWORD WINAPI receive_cmds( LPVOID lpParam ) {
 				
 				result = connectedClient.recvData( recMessage );
 				string body;
-				while ( recMessage != "." ) {
+				while ( true ) {
 					if ( result == -1 )
 						break;
-						
 					printf( "Received: %s\r\n", recMessage.c_str( ) );
-					body.append( recMessage );
-					
-					if ( recMessage != "\n" )
-						body.append( "\n" );
-						
+					if ( recMessage == "." )
+						break;
+					body.append( recMessage + "\n" );
+
 					result = connectedClient.recvData( recMessage );
 				}
+
 				printf( "Data complete...\n" );
 				
 				mailMessage.setMessageBody( body );
@@ -195,12 +174,14 @@ DWORD WINAPI receive_cmds( LPVOID lpParam ) {
 			}
 				
 			printf( "Received: %s\r\n", recMessage.c_str( ) );
-		}
-		
-		if ( recMessage == "QUIT" ) {
-			connectedClient.sendResponse( ErrorCode::SERVICE_CLOSING, "Goodbye!" );
-		}
+		}					
 	}
+
+	
+	if ( recMessage == "QUIT" ) {
+		connectedClient.sendResponse( ErrorCode::SERVICE_CLOSING, "Goodbye!" );
+	}
+
 	printf( "Client <%s> disconnected...\r\n", client_hostname.c_str( ) );
 	printf( "\r\nCommand thread closed...\r\n" );
 }
