@@ -1,3 +1,4 @@
+Compile Project
 Server:
 	g++ -o Server.exe main.cpp Socket.cpp ThreadUtils.cpp Message.cpp Codes.cpp -lws2_32
 Client:
