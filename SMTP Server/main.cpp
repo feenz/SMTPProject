@@ -54,6 +54,7 @@ DWORD WINAPI receive_cmds( LPVOID lpParam ) {
 	if ( good ) {
 		while ( recMessage != "QUIT" ) {		
 			if ( recMessage.substr( 0, 4 ) == "HELO" ) {
+				client_hostname = recMessage.substr( 5 );
 				connectedClient.sendResponse( ErrorCode::REQUEST_SUCCESS, string( "Hello " + client_hostname + ", I am glad to meet you!" ) );
 			} else if ( recMessage.substr( 0, 9 ) == "MAIL FROM" ) {
 				int beg = recMessage.find_first_of( "<" );
@@ -243,12 +244,14 @@ DWORD WINAPI check_msg_queue( LPVOID lpParam ) {
 					// 220 from server
 					result = relayClient.RecvData( recMessage );
 					if ( result == -1 ) {
-						printf( "Error: %s\n", recMessage.c_str( ) );
+						printf( "[Relay Error]: %s\n", recMessage.c_str( ) );
 						relayClient.CloseConnection( );
-					} 
+					}
+					printf("[Relay Received]: %s\n", recMessage.c_str( ) );
 						
 					if ( atoi( recMessage.substr( 0, 3 ).c_str( ) ) == ErrorCode::SRVC_RUN_SUCCES ) {
 						relayClient.SendData( string( "HELO " + serverHostname ) );
+						printf("[Relay Send]: %s\n", string( "HELO " + serverHostname ).c_str( ) );
 					}
 					
 					result = relayClient.RecvData( recMessage );
@@ -256,9 +259,11 @@ DWORD WINAPI check_msg_queue( LPVOID lpParam ) {
 						printf( "Error: %s\n", recMessage.c_str( ) );
 						relayClient.CloseConnection( );
 					}
+					printf("[Relay Received]: %s\n", recMessage.c_str( ) );
 					
 					if ( atoi( recMessage.substr( 0, 3 ).c_str( ) ) == ErrorCode::REQUEST_SUCCESS ) {
 						relayClient.SendData( "VRFY guest" );
+						printf("[Relay Send]: %s\n", string( "VRFY guest" ).c_str( ) );
 					}
 					
 					result = relayClient.RecvData( recMessage );
@@ -266,6 +271,7 @@ DWORD WINAPI check_msg_queue( LPVOID lpParam ) {
 						printf( "Error: %s\n", recMessage.c_str( ) );
 						relayClient.CloseConnection( );
 					}
+					printf("[Relay Received]: %s\n", recMessage.c_str( ) );
 					
 					if ( atoi( recMessage.substr( 0, 3 ).c_str( ) ) == ErrorCode::CMD_SYNTAX_EROR || atoi( recMessage.substr( 0, 3 ).c_str( ) ) == ErrorCode::INBOX_UNAVAILBL ) {
 						printf( "Invalid account...\n" );
@@ -273,57 +279,68 @@ DWORD WINAPI check_msg_queue( LPVOID lpParam ) {
 					}
 					
 					relayClient.SendData( string( "MAIL FROM:<" + pMsg->getFromAddress( ) + ">" ) );
+					printf("[Relay Send]: %s\n", string( "MAIL FROM:<" + pMsg->getFromAddress( ) + ">" ).c_str( ) );
 					
 					result = relayClient.RecvData( recMessage );
 					if ( result == -1 ) {
 						printf( "Error: %s\n", recMessage.c_str( ) );
 						relayClient.CloseConnection( );
 					}
+					printf("[Relay Received]: %s\n", recMessage.c_str( ) );
 					
 					if ( atoi( recMessage.substr( 0, 3 ).c_str( ) ) != ErrorCode::REQUEST_SUCCESS ) {
 						printf( "Error: %s\n", recMessage.c_str( ) );
 					}
 					
 					relayClient.SendData( string( "RCPT TO:<" + pMsg->getToAddress( ) + ">" ) );
+					printf("[Relay Send]: %s\n", string( "RCPT TO:<" + pMsg->getToAddress( ) + ">" ).c_str( ) );
 					
 					result = relayClient.RecvData( recMessage );
 					if ( result == -1 ) {
 						printf( "Error: %s\n", recMessage.c_str( ) );
 						relayClient.CloseConnection( );
 					}
+					printf("[Relay Received]: %s\n", recMessage.c_str( ) );
 					
 					if ( atoi( recMessage.substr( 0, 3 ).c_str( ) ) != ErrorCode::REQUEST_SUCCESS ) {
 						printf( "Error: %s\n", recMessage.c_str( ) );
 					}
 					
 					relayClient.SendData( "DATA" );
+					printf("[Relay Send]: %s\n", string( "DATA" ).c_str( ) );
 					
 					result = relayClient.RecvData( recMessage );
 					if ( result == -1 ) {
 						printf( "Error: %s\n", recMessage.c_str( ) );
 						relayClient.CloseConnection( );
 					}
+					printf("[Relay Received]: %s\n", recMessage.c_str( ) );
 					
 					if ( atoi( recMessage.substr( 0, 3 ).c_str( ) ) != ErrorCode::START_MAIL_DATA ) {
 						printf( "Error: %s\n", recMessage.c_str( ) );
 					}
 					
 					relayClient.SendData( pMsg->getMessageBody( ) );
+					printf("[Relay Send]:\nMessage Body\n-----------------\n");
+					printf("%s\n", string( pMsg->getMessageBody( ) ).c_str( ) );
+					relayClient.SendData( "." );
+					printf("[Relay Send]: %s\n", string( "." ).c_str( ) );
 					
 					result = relayClient.RecvData( recMessage );
 					if ( result == -1 ) {
 						printf( "Error: %s\n", recMessage.c_str( ) );
 						relayClient.CloseConnection( );
 					}
+					printf("[Relay Received]: %s\n", recMessage.c_str( ) );
 					
 					if ( atoi( recMessage.substr( 0, 3 ).c_str( ) ) == ErrorCode::REQUEST_SUCCESS ) {
-						printf( "Message successfully sent.\n" );
+						printf( "Relay Message successfully sent.\n" );
 					} else {
-						printf( "Error sending message...\n" );
+						printf( "Relay Error sending message...\n" );
 					}
 					
 					if ( result == -1 )
-						printf( "Error sending message...\n" );
+						printf( "Relay Error sending message...\n" );
 					
 					relayClient.CloseConnection( );
 				}
