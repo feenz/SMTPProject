@@ -2,20 +2,12 @@
 #include "Socket.h"
 
 Socket::Socket( ) {
-    if( WSAStartup( MAKEWORD(2, 2), &wsaData ) != NO_ERROR ) {
+    if( WSAStartup( MAKEWORD(2, 2), &wsaData ) != NO_ERROR ) 
         cerr << "Socket Initialization: Error with WSAStartup" << endl;
-        system( "pause" );
-        WSACleanup( );
-        exit( 10 );
-    }
     //Create a socket
     mySocket = socket( AF_INET, SOCK_STREAM, IPPROTO_TCP );
-    if ( mySocket == INVALID_SOCKET ) {
+    if ( mySocket == INVALID_SOCKET )
         cerr << "Socket Initialization: Error creating socket" << endl;
-        system( "pause" );
-        WSACleanup( );
-        exit( 11 );
-    }
     myBackup = mySocket;
 }
 
@@ -23,15 +15,18 @@ Socket::~Socket( ) {
     WSACleanup( );
 }
 
-bool Socket::SendData( char *buffer ) {
+bool Socket::SendData( string data ) {
+    const char* buffer = data.c_str( );
     send( mySocket, buffer, strlen( buffer ), 0 );
     return true;
 }
 
-bool Socket::RecvData( char *buffer, int size ) {
-    int i = recv( mySocket, buffer, size, 0 );
-    buffer[i] = '\0';
-    return true;
+int Socket::RecvData( string& data ) {
+    char buffer[STRLEN];
+    int ret = recv( mySocket, buffer, STRLEN, 0 );
+    buffer[ret] = '\0';
+    data = buffer;
+    return ret;
 }
 
 void Socket::CloseConnection( ) {
@@ -40,24 +35,21 @@ void Socket::CloseConnection( ) {
 }
 
 std::string Socket::GetAndSendMessage( ) {
-	char message[STRLEN];
-    cin.ignore( ); // without this, it gets the return char from the last cin and ignores the following one!
+    string message;
     cout << ">";
-    cin.get( message, STRLEN );
+    getline( cin, message );
     SendData( message );
-    string msg( message );
-    return msg;
+    return message;
 }
 
-void ClientSocket::ConnectToServer( const char *ipAddress, int port ) {
+bool ClientSocket::ConnectToServer( const char *ipAddress, int port ) {
     myAddress.sin_family = AF_INET;
     myAddress.sin_addr.s_addr = inet_addr( ipAddress );
     myAddress.sin_port = htons( port );
     
     if ( connect( mySocket, (SOCKADDR*) &myAddress, sizeof( myAddress ) ) == SOCKET_ERROR ) {
         cerr << "ClientSocket: Failed to connect" << endl;
-        system( "pause" );
-        WSACleanup( );
-        exit( 13 );
+        return false;
     } 
+    return true;
 }

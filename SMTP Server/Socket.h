@@ -30,5 +30,5 @@ class Socket {
 
 class ClientSocket : public Socket {
     public:
-        void ConnectToServer( const char*, int );
+        bool ConnectToServer( const char*, int );
 };

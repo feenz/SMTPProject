@@ -18,13 +18,13 @@ class Socket {
     public:
         Socket( );
         ~Socket( );
-        bool SendData( char* );
-        bool RecvData( char*, int );
+        bool SendData( string );
+        int RecvData( string& );
         void CloseConnection( );
         std::string GetAndSendMessage( );
 };
 
 class ClientSocket : public Socket {
     public:
-        void ConnectToServer( const char*, int );
+        bool ConnectToServer( const char*, int );
 };
