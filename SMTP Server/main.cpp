@@ -164,6 +164,21 @@ DWORD WINAPI receive_cmds( LPVOID lpParam ) {
 						Message *pMsg;
 						pMsg = &mailMessage;
 						messageQueue.push( pMsg ); // push the message into the queue
+
+						printf("%s\n", "Logging message...");
+						ofstream logFile;
+						appendOutputFile( logFile, "server.csv", std::ios::out, std::ios::app );
+						if ( logFile.is_open( ) ) {
+							string body = pMsg->getMessageBody( );
+							body.erase(std::remove(body.begin(), body.end(), '\n'), body.end());
+
+							logFile << "\"" << pMsg->getTimeStamp( ) << "\",";
+							logFile << "\"" << pMsg->getToAddress( ) << "\",";
+							logFile << "\"" << pMsg->getFromAddress( ) << "\",";
+							logFile << "\"" << body << "\"\n";
+							logFile.close( );
+						}
+						printf("%s\n", "Message logged successfully...");
 						
 						ReleaseMutex( mailQueueMutex );
 					}
@@ -213,21 +228,6 @@ DWORD WINAPI check_msg_queue( LPVOID lpParam ) {
 				printf( "Queue size %d\r\n", messageQueue.size( ) );
 				Message *pMsg;
 				pMsg = messageQueue.front( );
-
-				printf("%s\n", "Logging message...");
-				ofstream logFile;
-				appendOutputFile( logFile, "server.csv", std::ios::out, std::ios::app );
-				if ( logFile.is_open( ) ) {
-					string body = pMsg->getMessageBody( );
-					body.erase(std::remove(body.begin(), body.end(), '\n'), body.end());
-
-					logFile << "\"" << pMsg->getTimeStamp( ) << "\",";
-					logFile << "\"" << pMsg->getToAddress( ) << "\",";
-					logFile << "\"" << pMsg->getFromAddress( ) << "\",";
-					logFile << "\"" << body << "\"\n";
-					logFile.close( );
-				}
-				printf("%s\n", "Message logged successfully...");
 				
 				// check if the message is for a user on this server
 				bool relayUser = false;
