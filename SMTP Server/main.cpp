@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <unistd.h>
+#include <algorithm>
+#include <string>
 #include <iostream>
 #include <cstdlib>
 #include <cctype>
@@ -47,7 +49,7 @@ DWORD WINAPI receive_cmds( LPVOID lpParam ) {
 	connectedClient.sendResponse( ErrorCode::SRVC_RUN_SUCCES, string( serverHostname + " SMTP Server ready" ) );
 
 	result = connectedClient.recvData( recMessage );
-	printf( "Received: %s\r\n", recMessage.c_str( ) );
+	printf( "Initial Received: %s\r\n", recMessage.c_str( ) );
 	
 	bool good = result != -1 ? true : false;  
 		
@@ -68,7 +70,11 @@ DWORD WINAPI receive_cmds( LPVOID lpParam ) {
 					emailComplete[0] = true; // mail from completed
 				}
 			} else if ( recMessage.substr( 0, 4) == "VRFY" ) {
-				string user = recMessage.substr( 5 );
+				string user;
+				if ( recMessage.length( ) > 4 ) // user supplied name
+					user = recMessage.substr( 5 );
+				else
+					user = "guest";
 				for ( int i = 0; i < sizeof( ids )/sizeof(const char*); i++ ) {
 					if ( user.compare( ids[i] ) == 0 ) {
 						username = user;
@@ -120,11 +126,13 @@ DWORD WINAPI receive_cmds( LPVOID lpParam ) {
 				connectedClient.sendResponse( ErrorCode::START_MAIL_DATA, "End data with <CR><LF>.<CR><LF>" );
 				
 				result = connectedClient.recvData( recMessage );
+				cout << "Received =" << recMessage << endl;
+
 				string body;
 				while ( true ) {
 					if ( result == -1 )
 						break;
-					printf( "Received: %s\r\n", recMessage.c_str( ) );
+					printf( "Data Received: %s\r\n", recMessage.c_str( ) );
 					if ( recMessage == "." )
 						break;
 					body.append( recMessage + "\n" );
@@ -205,6 +213,21 @@ DWORD WINAPI check_msg_queue( LPVOID lpParam ) {
 				printf( "Queue size %d\r\n", messageQueue.size( ) );
 				Message *pMsg;
 				pMsg = messageQueue.front( );
+
+				printf("%s\n", "Logging message...");
+				ofstream logFile;
+				appendOutputFile( logFile, "server.csv", std::ios::out, std::ios::app );
+				if ( logFile.is_open( ) ) {
+					string body = pMsg->getMessageBody( );
+					body.erase(std::remove(body.begin(), body.end(), '\n'), body.end());
+
+					logFile << "\"" << pMsg->getTimeStamp( ) << "\",";
+					logFile << "\"" << pMsg->getToAddress( ) << "\",";
+					logFile << "\"" << pMsg->getFromAddress( ) << "\",";
+					logFile << "\"" << body << "\"\n";
+					logFile.close( );
+				}
+				printf("%s\n", "Message logged successfully...");
 				
 				// check if the message is for a user on this server
 				bool relayUser = false;
@@ -224,8 +247,8 @@ DWORD WINAPI check_msg_queue( LPVOID lpParam ) {
 							oFile << pMsg->getFromAddress( ) << "\n";
 							oFile << pMsg->getMessageBody( );
 							oFile << "." << "\n";
+							oFile.close( );
 						}
-						oFile.close( );
 						relayUser = false;
 						break;
 					} else {
