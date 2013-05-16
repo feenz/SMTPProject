@@ -53,3 +53,32 @@ bool ClientSocket::ConnectToServer( const char *ipAddress, int port ) {
     } 
     return true;
 }
+
+/**
+ * Function takes in a string and either encrypts or decrypts based on a given key and action. 
+ * @param message is a reference to the string which the action is performed on
+ * @param key is the encryption key used for encryption or decryption
+ * @param action is encrypt (E) or decrypt (D)
+ * @return the referenced message parameter contains either the cipher or plain text depending on the action 
+ */
+void ClientSocket::Cryptor( string &message, int key, const char* action ) {
+    for ( int index = 0; index < message.length( ); index++  ) {    // loop through each character
+        int decValue;       
+        if ( strcmp( action, "E" ) == 0 ) { 
+            if ( message[index] != '\n' ) {
+                decValue = ( int( message[index] ) - 32 ) + key;
+                if ( decValue > 95 )
+                    decValue -= 95;
+                decValue += 32;
+            }
+        } else if ( strcmp( action, "D" ) == 0 ) {
+            if ( message[index] != '\n' ) {
+                decValue = ( int( message[index] ) - 32 ) - key;
+                if ( decValue < 0 )
+                    decValue += 95;
+                decValue += 32; 
+            }
+        }
+        message[index] = decValue;
+    }
+};
